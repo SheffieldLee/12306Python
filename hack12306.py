@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-@time: 2018-01-04
-@author: ssf
+@time: 2018-08-29
+@author: ssf, SheffieldLee
 """
 
 """
@@ -264,13 +264,6 @@ class hackTickets(object):
                 self.driver.find_by_id('back_edit_id').click()
         else:
             self.driver.find_by_id('qr_submit_id').click()
-            #     self.driver.find_by_id('back_edit_id').click()
-            # else:
-            #     if self.noseat_allow == 1:
-            #         self.driver.find_by_id('qr_submit_id').click()
-            #         self.driver.find_by_id('back_edit_id').click()
-            #     elif self.noseat_allow == 1:
-            #         self.driver.find_by_id('qr_submit_id').click()
 
     def buyTickets(self):
         t = time.clock()
