@@ -20,7 +20,7 @@ from splinter.browser import Browser
 from configparser import ConfigParser
 from time import sleep
 import traceback
-import time, sys
+import sys
 import codecs
 import argparse
 import os
@@ -52,7 +52,7 @@ class hackTickets(object):
         # config.ini配置的是中文，转换成"武汉,WHN"，再进行编码
         self.starts = self.convertCityToCode(starts_city).encode('unicode_escape').decode("utf-8").replace("\\u", "%u").replace(",", "%2c")
         # 终点站
-        ends_city = cp.get("cookieInfo", "ends");
+        ends_city = cp.get("cookieInfo", "ends")
         self.ends = self.convertCityToCode(ends_city).encode('unicode_escape').decode("utf-8").replace("\\u", "%u").replace(",", "%2c")
         # 乘车时间
         self.dtime = cp.get("cookieInfo", "dtime")
@@ -73,8 +73,8 @@ class hackTickets(object):
         self.buy = cp.get("urlInfo", "buy")
 
         # 席别
-        seat_type = cp.get("confirmInfo", "seat_type")
-        self.seatType = self.seatMap[seat_type] if seat_type in self.seatMap else ""
+        self.seat_type = cp.get("confirmInfo", "seat_type")
+        self.seatType = self.seatMap[self.seat_type] if self.seat_type in self.seatMap else ""
 
         # 是否允许分配无座
         noseat_allow = cp.get("confirmInfo", "noseat_allow")
@@ -134,13 +134,13 @@ class hackTickets(object):
 
     def __init__(self):
         # 读取城市中文与三字码映射文件，获得转换后到城市信息-- “武汉”: "武汉,WHN"
-        self.city_codes = self.loadCityCode();
+        self.city_codes = self.loadCityCode()
 
         # 加载席别
         self.loadSeatType()
 
         # 读取配置文件，获得初始化参数
-        self.loadConfig();
+        self.loadConfig()
 
     def login(self):
         print("开始登录...")
@@ -195,15 +195,16 @@ class hackTickets(object):
         self.driver.cookies.add({"_jc_save_fromDate": self.dtime})
 
     def specifyTrainNo(self):
-        count=0
+        count = 0
         while self.driver.url == self.ticket_url:
             # 勾选车次类型，发车时间
-            self.searchMore();
+            self.driver.reload()
+            self.searchMore()
             sleep(0.05)
             self.driver.find_by_text(u"查询").click()
             count += 1
-            print(u"循环点击查询... 第 %s 次" % count)
-
+            print(u"循环查询... 第 %s 次" % count)
+            # self.driver.reload()
             try:
                 self.driver.find_by_text(u"预订")[self.order - 1].click()
                 sleep(0.3)
@@ -216,7 +217,7 @@ class hackTickets(object):
         count=0
         while self.driver.url == self.ticket_url:
             # 勾选车次类型，发车时间
-            self.searchMore();
+            self.searchMore()
             sleep(0.05)
             self.driver.find_by_text(u"查询").click()
             count += 1
@@ -237,6 +238,8 @@ class hackTickets(object):
         print(u'开始选择用户...')
         for user in self.users:
             self.driver.find_by_text(user).last.click()
+            if '学生' in user:
+                self.driver.find_by_id('dialog_xsertcj_ok').click()
 
     def confirmOrder(self):
         print(u"选择席别...")
@@ -254,13 +257,20 @@ class hackTickets(object):
         # 若提交订单异常，请适当加大sleep的时间
         sleep(1)
         print(u"确认选座...")
-        if self.driver.find_by_text(u"硬座余票<strong>0</strong>张") == None:
-            self.driver.find_by_id('qr_submit_id').click()
-        else:
-            if self.noseat_allow == 0:
-                self.driver.find_by_id('back_edit_id').click()
-            elif self.noseat_allow == 1:
+        if self.seat_type+'余票0张' in self.driver.find_by_id('sy_ticket_num_id').first.text:
+            if self.noseat_allow == 1:
                 self.driver.find_by_id('qr_submit_id').click()
+            elif self.noseat_allow == 0:
+                self.driver.find_by_id('back_edit_id').click()
+        else:
+            self.driver.find_by_id('qr_submit_id').click()
+            #     self.driver.find_by_id('back_edit_id').click()
+            # else:
+            #     if self.noseat_allow == 1:
+            #         self.driver.find_by_id('qr_submit_id').click()
+            #         self.driver.find_by_id('back_edit_id').click()
+            #     elif self.noseat_allow == 1:
+            #         self.driver.find_by_id('qr_submit_id').click()
 
     def buyTickets(self):
         t = time.clock()
@@ -270,8 +280,8 @@ class hackTickets(object):
             # 填充查询条件
             self.preStart()
 
-            # 带着查询条件，重新加载页面
-            self.driver.reload()
+            # # 带着查询条件，重新加载页面
+            # self.driver.reload()
 
             # 预定车次算法：根据order的配置确定开始点击预订的车次，0-从上至下点击，1-第一个车次，2-第二个车次，类推
             if self.order != 0:
@@ -311,9 +321,10 @@ class hackTickets(object):
         self.driver.visit(self.ticket_url)
 
         # 自动购买车票
-        self.buyTickets();
+        self.buyTickets()
+
 
 if __name__ == '__main__':
-    print("===========hack12306 begin===========")
+    print("=========== 开始抢票 ===========")
     hackTickets = hackTickets()
     hackTickets.start()
